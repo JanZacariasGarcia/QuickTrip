@@ -1,7 +1,9 @@
 import {Link} from "react-router-dom";
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import axios from "axios";
 import PlaceFinder from "../PlaceFinder.jsx";
+import styled from 'styled-components';
+import Button from "../SearchButton.jsx";
 
 export default function IndexPage() {
     // const [places, setPlaces] = useState([]);
@@ -12,9 +14,10 @@ export default function IndexPage() {
     // },[]);
 
     return (
-        <>
+        <div className={"py-10"}>
+            <Button></Button>
             <PlaceFinder></PlaceFinder>
-        </>
+        </div>
         // <div className={"flex justify-center mr-14 py-8"}>
         //     <div className="flex flex-col gap-2 sm:w-72 text-[10px] sm:text-xs z-50 items-center">
         //         <div>
@@ -23,19 +26,19 @@ export default function IndexPage() {
         //         </div>
         //     </div>
 
-                //     <div className="text-[#2b9875] bg-white/5 backdrop-blur-xl p-1 rounded-lg">
-                //         <svg
-                //             xmlns="http://www.w3.org/2000/svg"
-                //             fill="none"
-                //             viewBox="0 0 24 24"
-                //             strokeWidth="1.5"
-                //             stroke="currentColor"
-                //             className="w-6 h-6"
-                //         >
-                //             <path
-                //                 strokeLinecap="round"
-                //                 strokeLinejoin="round"
-                //                 d="m4.5 12.75 6 6 9-13.5"
+        //     <div className="text-[#2b9875] bg-white/5 backdrop-blur-xl p-1 rounded-lg">
+        //         <svg
+        //             xmlns="http://www.w3.org/2000/svg"
+        //             fill="none"
+        //             viewBox="0 0 24 24"
+        //             strokeWidth="1.5"
+        //             stroke="currentColor"
+        //             className="w-6 h-6"
+        //         >
+        //             <path
+        //                 strokeLinecap="round"
+        //                 strokeLinejoin="round"
+        //                 d="m4.5 12.75 6 6 9-13.5"
                 //             ></path>
                 //         </svg>
                 //     </div>
