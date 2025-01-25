@@ -1,23 +1,45 @@
-import {useState} from "react";
+import { useState } from "react";
 import axios from "axios";
 
 export default function PlaceFinder() {
     const [apiResponse, setApiResponse] = useState(null);
     const [error, setError] = useState(null);
+    const [rawResponse, setRawResponse] = useState(null);
 
     const handleApiCall = async () => {
         const options = {
-            method: 'GET',
-            url: 'https://sky-scanner3.p.rapidapi.com/flights/price-calendar-web-return',
-            params: {
-                fromEntityId: 'DUB',
-                toEntityId: 'BCN',
-                yearMonth: '2025-02',
-                yearMonthReturn: '2025-03'
+            method: "POST",
+            url: 'https://sky-scanner3.p.rapidapi.com/flights/search-multi-city',
+            data: {
+                market: 'UK',
+                locale: 'en-US',
+                currency: 'EUR',
+                adults: 1,
+                children: 0,
+                infants: 0,
+                cabinClass: 'economy',
+                stops: [
+                    'direct',
+                    '1stop',
+                    '2stops'
+                ],
+                sort: 'cheapest_first',
+                flights: [
+                    {
+                        fromEntityId: 'BCN',
+                        toEntityId: 'DUB',
+                        departDate: '2025-02-02'
+                    },
+                    {
+                        fromEntityId: 'DUB',
+                        toEntityId: 'BCN',
+                        departDate: '2025-02-22'
+                    }
+                ],
             },
             headers: {
-                'x-rapidapi-key': '92d970d30cmsh1f8198993778dd8p137efcjsn9cba1685733a',
-                'x-rapidapi-host': 'sky-scanner3.p.rapidapi.com'
+                "x-rapidapi-key": "92d970d30cmsh1f8198993778dd8p137efcjsn9cba1685733a",
+                "x-rapidapi-host": "sky-scanner3.p.rapidapi.com",
             },
         };
 
@@ -33,7 +55,6 @@ export default function PlaceFinder() {
 
     return (
         <div>
-            {/* API Call Button */}
             <div className="flex flex-col items-center mt-4">
                 <button
                     onClick={handleApiCall}
@@ -41,11 +62,20 @@ export default function PlaceFinder() {
                 >
                     Get Flight Info
                 </button>
+
                 {/* Display API Response */}
                 {apiResponse && (
                     <div className="mt-4 p-4 bg-green-100 rounded-md">
-                        <h3 className="font-bold">API Response:</h3>
+                        <h3 className="font-bold">Sorted Flights:</h3>
                         <pre className="text-sm">{JSON.stringify(apiResponse, null, 2)}</pre>
+                    </div>
+                )}
+
+                {/* Display Raw Response for Debugging */}
+                {rawResponse && (
+                    <div className="mt-4 p-4 bg-yellow-100 rounded-md">
+                        <h3 className="font-bold">Raw API Response:</h3>
+                        <pre className="text-xs">{JSON.stringify(rawResponse, null, 2)}</pre>
                     </div>
                 )}
 
@@ -58,6 +88,5 @@ export default function PlaceFinder() {
                 )}
             </div>
         </div>
-
     );
 }
