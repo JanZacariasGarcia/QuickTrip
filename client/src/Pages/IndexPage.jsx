@@ -15,7 +15,6 @@ export default function IndexPage() {
 
     return (
         <div className={"py-10"}>
-            <Button></Button>
             <PlaceFinder></PlaceFinder>
         </div>
         // <div className={"flex justify-center mr-14 py-8"}>

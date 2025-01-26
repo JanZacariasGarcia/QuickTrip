@@ -1,10 +1,12 @@
 import {Link} from "react-router-dom";
 import {useContext} from "react";
 import {UserContext} from "./UserContext";
+import Button from "./SearchButton.jsx";
 
 export default function Header(){
     const {user} = useContext(UserContext);
     return (
+        <>
         <header className={"flex justify-between"}>
             <Link to={'/'} className={"flex items-center gap-1"}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
@@ -37,5 +39,9 @@ export default function Header(){
                 )}
             </Link>
         </header>
+            <div className={"py-4"}>
+                <Button></Button>
+            </div>
+        </>
     )
 }
