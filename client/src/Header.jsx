@@ -1,13 +1,20 @@
-import {Link} from "react-router-dom";
-import {useContext} from "react";
+import {Link, useLocation} from "react-router-dom";
+import React, {useContext, useState} from "react";
 import {UserContext} from "./UserContext";
 import Button from "./SearchButton.jsx";
+import SearchButton from "./SearchButton.jsx";
 
 export default function Header(){
     const {user} = useContext(UserContext);
+    const location = useLocation()
+    const [activeButton, setActiveButton] = useState(null);
+
+    async function submit(){
+
+    }
     return (
         <>
-        <header className={"flex justify-between"}>
+        <header className={"flex justify-between items-center"}>
             <Link to={'/'} className={"flex items-center gap-1"}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
                      stroke="currentColor" className="size-10">
@@ -16,6 +23,9 @@ export default function Header(){
                 </svg>
                 <span className={"font-bold text-xl"}>QuickTrip</span>
             </Link>
+            {location.pathname !== "/" &&
+            <SearchButton></SearchButton>
+            }
 
             <Link to={user? "/account" : "/login"} className={"flex items-center gap-2 border border-gray-300 rounded-full py-2 px-4"}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
@@ -39,9 +49,6 @@ export default function Header(){
                 )}
             </Link>
         </header>
-            <div className={"py-4"}>
-                <Button></Button>
-            </div>
         </>
     )
 }

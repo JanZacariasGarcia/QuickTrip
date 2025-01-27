@@ -1,9 +1,8 @@
 import {Link} from "react-router-dom";
 import React, {useEffect, useState} from "react";
 import axios from "axios";
-import PlaceFinder from "../PlaceFinder.jsx";
-import styled from 'styled-components';
-import Button from "../SearchButton.jsx";
+import FlightFinder from "../FlightFinder.jsx";
+import SearchButton from "../SearchButton.jsx";
 
 export default function IndexPage() {
     // const [places, setPlaces] = useState([]);
@@ -14,8 +13,13 @@ export default function IndexPage() {
     // },[]);
 
     return (
-        <div className={"py-10"}>
-            <PlaceFinder></PlaceFinder>
+        <div className={""}>
+            <div className={"py-4"}>
+                <SearchButton></SearchButton>
+            </div>
+            <div className={"py-10"}>
+                <FlightFinder></FlightFinder>
+            </div>
         </div>
         // <div className={"flex justify-center mr-14 py-8"}>
         //     <div className="flex flex-col gap-2 sm:w-72 text-[10px] sm:text-xs z-50 items-center">
