@@ -117,38 +117,38 @@ export default function FlightFinder() {
                 >
                     Get Flight Info
                 </button>
-                {/* Display API Response */}
-                {apiResponse && (
-                    <div className="mt-4 p-4 bg-green-100 rounded-md">
-                        <h3 className="font-bold">Flights:</h3>
-                        <pre className="text-sm">{JSON.stringify(apiResponse.data, null, 2)}</pre>
-                    </div>
-                )}
-
-                {/*/!* Display Processed Flight Data *!/*/}
-                {/*{flightData.ids.length > 0 && (*/}
-                {/*    <div className="mt-4 p-4 bg-green-100 rounded-md w-full max-w-2xl">*/}
-                {/*        <h3 className="font-bold">Found Flights:</h3>*/}
-                {/*        {flightData.ids.map((id, index) => (*/}
-                {/*            <div key={id} className="mt-2 p-2 border-b">*/}
-                {/*                <p className="font-medium">Flight ID: {id}</p>*/}
-                {/*                <p>Price: {formatPrice(flightData.prices[index])}</p>*/}
-                {/*                <div className="mt-1">*/}
-                {/*                    <p className="font-medium">Flight Legs:</p>*/}
-                {/*                    {Array.isArray(flightData.legs[index]) ? (*/}
-                {/*                        flightData.legs[index].map((legs, segIndex) => (*/}
-                {/*                            <p key={segIndex} className="ml-4 text-sm">*/}
-                {/*                                {formatLegs(legs)}*/}
-                {/*                            </p>*/}
-                {/*                        ))*/}
-                {/*                    ) : (*/}
-                {/*                        <p className="ml-4 text-sm">No legs information available</p>*/}
-                {/*                    )}*/}
-                {/*                </div>*/}
-                {/*            </div>*/}
-                {/*        ))}*/}
+                {/*/!* Display API Response *!/*/}
+                {/*{apiResponse && (*/}
+                {/*    <div className="mt-4 p-4 bg-green-100 rounded-md">*/}
+                {/*        <h3 className="font-bold">Flights:</h3>*/}
+                {/*        <pre className="text-sm">{JSON.stringify(apiResponse.data, null, 2)}</pre>*/}
                 {/*    </div>*/}
                 {/*)}*/}
+
+                {/* Display Processed Flight Data */}
+                {flightData.ids.length > 0 && (
+                    <div className="mt-4 p-4 bg-green-100 rounded-md w-full max-w-2xl">
+                        <h3 className="font-bold">Found Flights:</h3>
+                        {flightData.ids.map((id, index) => (
+                            <div key={id} className="mt-2 p-2 border-b">
+                                <p className="font-medium">Flight ID: {id}</p>
+                                <p>Price: {formatPrice(flightData.prices[index])}</p>
+                                <div className="mt-1">
+                                    <p className="font-medium">Flight Legs:</p>
+                                    {Array.isArray(flightData.legs[index]) ? (
+                                        flightData.legs[index].map((legs, segIndex) => (
+                                            <p key={segIndex} className="ml-4 text-sm">
+                                                {formatLegs(legs)}
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="ml-4 text-sm">No legs information available</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Display Error */}
                 {error && (

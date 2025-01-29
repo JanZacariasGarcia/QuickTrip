@@ -11,6 +11,7 @@ import {fileURLToPath} from 'url';
 import {dirname} from 'path';
 import * as fs from "node:fs";
 import multer from 'multer';
+import Groq from "groq-sdk";
 
 const __filename = fileURLToPath(import.meta.url); // Get the current file's path
 const __dirname = dirname(__filename); // Get the current directory
@@ -109,6 +110,36 @@ app.post('/upload-by-link', async (req, res) =>{
         dest : __dirname+'/uploads/' + newName,
     });
     res.json(newName);
+});
+
+
+app.post('/cities', async (req, res) => {
+    const { startDate, endDate, weather, budget } = req.body;
+    const groq = new Groq({apiKey:'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'});
+    console.log(weather);
+    console.log(budget);
+    console.log(startDate);
+    console.log(endDate);
+
+    try {
+        const completion = await groq.chat.completions.create({
+            messages: [{
+                role: "user",
+                content: `Please provide me a list of 20 different cities that I could travel to from Dublin for ` +
+                    `€${budget} or less that are forecasted to have temperatures of ${weather} ` +
+                    `from ${startDate} to ${endDate}`,
+            }],
+            model: "llama-3.3-70b-versatile",
+        });
+
+        console.log(completion); // Log the entire response
+
+        res.json({ cities: completion.choices[0].message.content });
+    } catch (error) {
+        console.error(error); // Log the error
+        res.status(500).json({ error: error.message });
+    }
+
 });
 const photosMiddleware = multer({ dest: 'uploads/' });
 // app.post('/upload', photosMiddleware.array('photos', 100),async (req, res) =>{

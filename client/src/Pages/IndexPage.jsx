@@ -2,7 +2,7 @@ import {Link} from "react-router-dom";
 import React, {useEffect, useState} from "react";
 import axios from "axios";
 import FlightFinder from "../FlightFinder.jsx";
-import SearchButton from "../SearchButton.jsx";
+import SearchBar from "../SearchBar.jsx";
 
 export default function IndexPage() {
     // const [places, setPlaces] = useState([]);
@@ -15,7 +15,7 @@ export default function IndexPage() {
     return (
         <div className={""}>
             <div className={"py-4"}>
-                <SearchButton></SearchButton>
+                <SearchBar></SearchBar>
             </div>
             <div className={"py-10"}>
                 <FlightFinder></FlightFinder>

@@ -8,6 +8,7 @@ import axios from "axios";
 import {UserContentProvider} from "./UserContext";
 import ProfilePage from "./Pages/ProfilePage";
 import BookingsPage from "./Pages/BookingsPage";
+import FlightsPage from "./Pages/FlightsPage.jsx";
 
 axios.defaults.baseURL = 'http://localhost:4000';
 axios.defaults.withCredentials = true;
@@ -21,6 +22,7 @@ function App() {
                     <Route path={"/register"} element={<RegisterPage />}/>
                     <Route path={"/account"} element={<ProfilePage />}/>
                     <Route path={"/account/bookings"} element={<BookingsPage />}/>
+                    <Route path="/flights/:dates" element={<FlightsPage />} />
                 </Route>
             </Routes>
         </UserContentProvider>

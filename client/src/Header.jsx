@@ -1,8 +1,8 @@
 import {Link, useLocation} from "react-router-dom";
 import React, {useContext, useState} from "react";
 import {UserContext} from "./UserContext";
-import Button from "./SearchButton.jsx";
-import SearchButton from "./SearchButton.jsx";
+import Button from "./SearchBar.jsx";
+import SearchBar from "./SearchBar.jsx";
 
 export default function Header(){
     const {user} = useContext(UserContext);
@@ -24,7 +24,7 @@ export default function Header(){
                 <span className={"font-bold text-xl"}>QuickTrip</span>
             </Link>
             {location.pathname !== "/" &&
-            <SearchButton></SearchButton>
+            <SearchBar></SearchBar>
             }
 
             <Link to={user? "/account" : "/login"} className={"flex items-center gap-2 border border-gray-300 rounded-full py-2 px-4"}>
