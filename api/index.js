@@ -125,8 +125,8 @@ app.post('/cities', async (req, res) => {
         const completion = await groq.chat.completions.create({
             messages: [{
                 role: "user",
-                content: `Please provide me a list of 20 different cities that I could travel to from Dublin for ` +
-                    `€${budget} or less that are forecasted to have temperatures of ${weather} ` +
+                content: `Please provide me a list of 20 different cities that I could travel to from Dublin with a budget` +
+                    `for my flights of €${budget} or less that are forecasted to have temperatures of ${weather} ` +
                     `from ${startDate} to ${endDate}`,
             }],
             model: "llama-3.3-70b-versatile",
@@ -134,7 +134,7 @@ app.post('/cities', async (req, res) => {
 
         console.log(completion); // Log the entire response
 
-        res.json({ cities: completion.choices[0].message.content });
+        res.json({cities: completion.choices[0].message.content});
     } catch (error) {
         console.error(error); // Log the error
         res.status(500).json({ error: error.message });

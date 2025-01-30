@@ -21,12 +21,16 @@ export default function FlightsPage() {
         setError(null);
         try {
             const response = await axios.post(
-                'http://localhost:4000/cities', {startDate, endDate, weather, budget}, {withCredentials: true});
-            if (!response.ok) throw new Error('Failed to fetch cities');
-            const data = await response.json();
-            setCities(data.cities);
+                'http://localhost:4000/cities',
+                { startDate, endDate, weather, budget },
+                { withCredentials: true }
+            );
+
+            // Axios automatically parses the response data, so you can access it directly
+            setCities(response.data.cities);
         } catch (error) {
-            setError(error.message);
+            // Handle Axios errors
+            setError(error.response ? error.response.data.message : error.message);
         } finally {
             setLoading(false);
         }
@@ -41,14 +45,13 @@ export default function FlightsPage() {
             >
                 {loading ? 'Loading...' : 'Get Cities'}
             </button>
-
-            {error && <p className="text-red-500">{error}</p>}
-
-            {cities && (
-                <div className="mt-4">
+            {cities !== null && (
+                <div className="mt-4 col">
                     <pre>{cities}</pre>
                 </div>
             )}
+            {error && <p className="text-red-500">{error}</p>}
+
         </div>
     );
 }
