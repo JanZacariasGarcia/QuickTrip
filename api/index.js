@@ -98,19 +98,19 @@ app.get('/profile', (req,res) => {
 app.post('/logout', (req,res) => {
     res.cookie('token', '').json(true);
 });
-app.post('/upload-by-link', async (req, res) =>{
-    const{link} = req.body;
-    // Validate the link input
-    if (!link || typeof link !== 'string' || link.trim() === '') {
-        return res.status(400).json({ error: 'Invalid link provided.' });
-    }
-    const newName = 'Photo' + Date.now() + '.jpg'
-    await download.image({
-        url: link,
-        dest : __dirname+'/uploads/' + newName,
-    });
-    res.json(newName);
-});
+// app.post('/upload-by-link', async (req, res) =>{
+//     const{link} = req.body;
+//     // Validate the link input
+//     if (!link || typeof link !== 'string' || link.trim() === '') {
+//         return res.status(400).json({ error: 'Invalid link provided.' });
+//     }
+//     const newName = 'Photo' + Date.now() + '.jpg'
+//     await download.image({
+//         url: link,
+//         dest : __dirname+'/uploads/' + newName,
+//     });
+//     res.json(newName);
+// });
 
 
 app.post('/cities', async (req, res) => {
@@ -140,6 +140,68 @@ app.post('/cities', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 
+});
+
+app.post('/airports', async (req, res) => {
+    const { airports } = req.body;
+    const groq = new Groq({apiKey:'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'});
+
+    // Input validation
+    if (!airports || !Array.isArray(airports) || airports.length === 0) {
+        return res.status(400).json({ error: 'Invalid or empty airports array provided' });
+    }
+
+    // Format the cities list for better prompt readability
+    const citiesList = airports.join(', ');
+
+    try {
+        const completion = await groq.chat.completions.create({
+            messages: [{
+                role: "user",
+                content: `Please provide the IATA airport codes for the following cities in a clear format. 
+                         Only include the main/largest airport for each city.
+                         Cities: ${citiesList}
+                         
+                         Please format the response as a JSON array of objects, each with 'city' and 'code' properties.
+                         Example format: [{"city": "Dublin", "code": "DUB"}, {"city": "London", "code": "LHR"}]`
+            }],
+            model: "llama-3.3-70b-versatile",
+        });
+
+        // Parse the response to ensure it's in the correct format
+        let airportData;
+        try {
+            // The AI might return the JSON string with additional text, so try to extract just the JSON part
+            const responseText = completion.choices[0].message.content;
+            const jsonMatch = responseText.match(/\[.*\]/s);
+
+            if (jsonMatch) {
+                airportData = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not find JSON array in response');
+            }
+        } catch (parseError) {
+            console.error('Error parsing AI response:', parseError);
+            // Fallback: return the raw response if parsing fails
+            return res.json({
+                airports: completion.choices[0].message.content
+            });
+        }
+
+        // Return the structured data
+        res.json({
+            success: true,
+            airports: airportData
+        });
+
+    } catch (error) {
+        console.error('Groq API Error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch airport codes',
+            details: error.message
+        });
+    }
 });
 const photosMiddleware = multer({ dest: 'uploads/' });
 // app.post('/upload', photosMiddleware.array('photos', 100),async (req, res) =>{
