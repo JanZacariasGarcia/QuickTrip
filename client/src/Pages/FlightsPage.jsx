@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import DisplayFlights from "../DisplayFlights.jsx";
 
 export default function FlightsPage() {
     const { dates } = useParams();
@@ -65,34 +66,6 @@ export default function FlightsPage() {
         return [];
     }
 
-    async function getFlights(index, dep, dest) {
-        const options = {
-            method: 'GET',
-            url: 'https://booking-com15.p.rapidapi.com/api/v1/flights/searchFlights',
-            params: {
-                fromId: dep + '.AIRPORT',
-                toId: dest + '.AIRPORT',
-                pageNo: '1',
-                adults: '1',
-                children: '0,17',
-                sort: 'BEST',
-                cabinClass: 'ECONOMY',
-                currency_code: 'AED'
-            },
-            headers: {
-                'x-rapidapi-key': '92d970d30cmsh1f8198993778dd8p137efcjsn9cba1685733a',
-                'x-rapidapi-host': 'booking-com15.p.rapidapi.com'
-            }
-        };
-
-        try {
-            const response = await axios.request(options);
-            console.log(response.data);
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
     useEffect(() => {
         getCities();
     }, []); // Fetch cities when the component mounts
@@ -119,10 +92,17 @@ export default function FlightsPage() {
                             <strong>{airport.city}</strong> - {airport.code}
                         </li>
                     ))}
-        </div>
-    )
-}
-{error && <p className="text-red-500">{error}</p>}
+                </div>
+            )}
+            {codes && (
+                <DisplayFlights
+                    airports={codes}
+                    home={"DUB"}
+                    departureDate={startDate}
+                    returnDate={endDate}
+                />
+            )}
+            {error && <p className="text-red-500">{error}</p>}
         </div>
     );
 }

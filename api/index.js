@@ -1,4 +1,4 @@
-import express from 'express';
+import express, {text} from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -12,6 +12,8 @@ import {dirname} from 'path';
 import * as fs from "node:fs";
 import multer from 'multer';
 import Groq from "groq-sdk";
+import puppeteer from "puppeteer";
+import playwright from 'playwright';
 
 const __filename = fileURLToPath(import.meta.url); // Get the current file's path
 const __dirname = dirname(__filename); // Get the current directory
@@ -203,6 +205,92 @@ app.post('/airports', async (req, res) => {
         });
     }
 });
+
+async function scrapeFlights(home, destination, departure, returnDate) {
+
+}
+
+// API Endpoint
+app.post("/api/flights", async (req, res) => {
+    const { home, destination, departure, returnDate } = req.body;
+
+    if (!home || !destination || !departure || !returnDate) {
+        return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+
+    const flights = await scrapeFlights(home, destination, departure, returnDate);
+    res.json(flights);
+});
+
+async function scrape (destination, from, to, budget){
+    const browser = await playwright.chromium.launch({
+        headless: false,
+    });
+
+    const MY_CITY = 'dublin-ireland';
+    const DEFAULT_TIMEOUT = 10000;
+    let cookiesAccepted = false;
+
+    const page = await browser.newPage()
+    if (destination === 'anywhere'){
+        if (from === 0 || to === 0) {
+            await page.goto('https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere?sortAggregateBy=price');
+            await page.waitForTimeout(DEFAULT_TIMEOUT);
+        }else{
+            await page.goto(`https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere/${from}/${to}?sortAggregateBy=price`);
+            await page.waitForTimeout(DEFAULT_TIMEOUT);
+        }
+
+        if(!cookiesAccepted){
+            await page.locator('#cookies_accept').click(); //ids must have # in front
+            cookiesAccepted = true;
+            await page.waitForTimeout(DEFAULT_TIMEOUT);
+        }
+
+        await page.locator('button', {hasText: 'Popularity'}).click(); // locate button that has text popularity and click it
+        await page.waitForTimeout(DEFAULT_TIMEOUT);
+        await page.locator('button', {hasText: 'Cheapest'}).click(); // locate button that has text cheapest and click it
+        await page.waitForTimeout(DEFAULT_TIMEOUT);
+
+        const citiesCardLocator = page.locator('[data-test=PictureCardContent]');
+        const cityCardsCount = await citiesCardLocator.count();
+        for(let i = 0; i < cityCardsCount; i++){
+            const currentCityCardLocator = cityCardsCount.nth(i);
+            const textContent = await currentCityCardLocator.textContent();
+            const price = Number(textContent.substring(textContent.indexOf('€') + 1));
+            if(price <= budget){
+                await currentCityCardLocator.click();
+                await page.waitForTimeout(DEFAULT_TIMEOUT);
+
+                await page.locator('text=Cheapest').click();
+                await page.waitForTimeout(DEFAULT_TIMEOUT);
+
+                const city = textContent.substring(textContent.indexOf(MY_CITY) + MY_CITY.length,
+                    textContent.indexOf('From').replaceAll('','-'));
+                const cheapestFlightCardLocator = page.locator('[data-test=ResultCardWrapper]').first();
+                const actualPriceWithEuro = await cheapestFlightCardLocator.locator('[data-test=ResultCardPrice] > div:nth-child(1)').textContent();
+                const actualPrice = Number(actualPriceWithEuro.replace('€', ''));
+                if (actualPrice <= budget){
+                    await cheapestFlightCardLocator.screenshot({path:`${from} ${to}(${city})-${actualPrice}.png`});
+                }
+                if (destination === 'anywhere'){
+                    if (from === 0 || to === 0) {
+                        await page.goto('https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere?sortAggregateBy=price');
+                        await page.waitForTimeout(DEFAULT_TIMEOUT);
+                    }else{
+                        await page.goto(`https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere/${from}/${to}?sortAggregateBy=price`);
+                        await page.waitForTimeout(DEFAULT_TIMEOUT);
+                    }
+                }
+
+            }
+        }
+    }
+}
+
+
+
 const photosMiddleware = multer({ dest: 'uploads/' });
 // app.post('/upload', photosMiddleware.array('photos', 100),async (req, res) =>{
 //     const uploadedFiles = [];
