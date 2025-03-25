@@ -22,7 +22,7 @@ function App() {
                     <Route path={"/register"} element={<RegisterPage />}/>
                     <Route path={"/account"} element={<ProfilePage />}/>
                     <Route path={"/account/bookings"} element={<BookingsPage />}/>
-                    <Route path="/flights/:dates" element={<FlightsPage />} />
+                    <Route path={"/flights/:dates"} element={<FlightsPage />} />
                 </Route>
             </Routes>
         </UserContentProvider>

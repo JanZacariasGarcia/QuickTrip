@@ -206,10 +206,6 @@ app.post('/airports', async (req, res) => {
     }
 });
 
-async function scrapeFlights(home, destination, departure, returnDate) {
-
-}
-
 // API Endpoint
 app.post("/api/flights", async (req, res) => {
     const { home, destination, departure, returnDate } = req.body;
@@ -217,75 +213,75 @@ app.post("/api/flights", async (req, res) => {
     if (!home || !destination || !departure || !returnDate) {
         return res.status(400).json({ error: "Missing required parameters" });
     }
-
-
-    const flights = await scrapeFlights(home, destination, departure, returnDate);
-    res.json(flights);
+});
+// endpoint  index.js
+app.post('/api/scrape', async (req, res) => {
+    try {
+        const { destination, from, to, budget } = req.body;
+        const results = await scrape(destination, from, to, budget);
+        res.json({ success: true, results });
+    } catch (error) {
+        console.error('Scraping error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
-async function scrape (destination, from, to, budget){
+async function scrape(destination, from, to, budget) {
     const browser = await playwright.chromium.launch({
         headless: false,
     });
 
     const MY_CITY = 'dublin-ireland';
-    const DEFAULT_TIMEOUT = 10000;
+    const DEFAULT_TIMEOUT = 2000;
     let cookiesAccepted = false;
 
-    const page = await browser.newPage()
-    if (destination === 'anywhere'){
+    const page = await browser.newPage();
+    if (destination === 'anywhere') {
         if (from === 0 || to === 0) {
-            await page.goto('https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere?sortAggregateBy=price');
+            await page.goto(`https://www.kiwi.com/en/search/tiles/${MY_CITY}/anywhere?sortAggregateBy=price`);
             await page.waitForTimeout(DEFAULT_TIMEOUT);
-        }else{
-            await page.goto(`https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere/${from}/${to}?sortAggregateBy=price`);
+        } else {
+            await page.goto(`https://www.kiwi.com/en/search/tiles/${MY_CITY}/anywhere/${from}/${to}?sortAggregateBy=price`);
             await page.waitForTimeout(DEFAULT_TIMEOUT);
         }
 
-        if(!cookiesAccepted){
-            await page.locator('#cookies_accept').click(); //ids must have # in front
+        if (!cookiesAccepted) {
+            await page.locator('#cookies_accept').click();
             cookiesAccepted = true;
             await page.waitForTimeout(DEFAULT_TIMEOUT);
         }
 
-        await page.locator('button', {hasText: 'Popularity'}).click(); // locate button that has text popularity and click it
-        await page.waitForTimeout(DEFAULT_TIMEOUT);
-        await page.locator('button', {hasText: 'Cheapest'}).click(); // locate button that has text cheapest and click it
-        await page.waitForTimeout(DEFAULT_TIMEOUT);
+        const cityCardLocator = page.locator('[data-test=PictureCard]');
+        const cityCardsCount = await cityCardLocator.count();
 
-        const citiesCardLocator = page.locator('[data-test=PictureCardContent]');
-        const cityCardsCount = await citiesCardLocator.count();
-        for(let i = 0; i < cityCardsCount; i++){
-            const currentCityCardLocator = cityCardsCount.nth(i);
+        for (let i = 0; i < cityCardsCount; i++) {
+            const currentCityCardLocator = cityCardLocator.nth(i);
             const textContent = await currentCityCardLocator.textContent();
             const price = Number(textContent.substring(textContent.indexOf('€') + 1));
-            if(price <= budget){
+            if (price < budget) {
                 await currentCityCardLocator.click();
                 await page.waitForTimeout(DEFAULT_TIMEOUT);
 
                 await page.locator('text=Cheapest').click();
                 await page.waitForTimeout(DEFAULT_TIMEOUT);
 
-                const city = textContent.substring(textContent.indexOf(MY_CITY) + MY_CITY.length,
-                    textContent.indexOf('From').replaceAll('','-'));
+                const city = textContent.substring(textContent.indexOf(MY_CITY) + MY_CITY.length, textContent.indexOf('From'))
+                    .replaceAll(' ', '-');
                 const cheapestFlightCardLocator = page.locator('[data-test=ResultCardWrapper]').first();
-                const actualPriceWithEuro = await cheapestFlightCardLocator.locator('[data-test=ResultCardPrice] > div:nth-child(1)').textContent();
-                const actualPrice = Number(actualPriceWithEuro.replace('€', ''));
-                if (actualPrice <= budget){
-                    await cheapestFlightCardLocator.screenshot({path:`${from} ${to}(${city})-${actualPrice}.png`});
-                }
-                if (destination === 'anywhere'){
-                    if (from === 0 || to === 0) {
-                        await page.goto('https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere?sortAggregateBy=price');
-                        await page.waitForTimeout(DEFAULT_TIMEOUT);
-                    }else{
-                        await page.goto(`https://www.kiwi.com/en/search/tiles/dublin-ireland/anywhere/${from}/${to}?sortAggregateBy=price`);
-                        await page.waitForTimeout(DEFAULT_TIMEOUT);
-                    }
+                const actualPriceWithDollarSign = await cheapestFlightCardLocator.locator('[data-test=ResultCardPrice] > div:nth-child(1)').textContent();
+
+                const actualPrice = Number(actualPriceWithDollarSign.replace('€', ''));
+                if (actualPrice < budget) {
+                    await cheapestFlightCardLocator.screenshot({ path: `${from} ${to}(${city})-${actualPrice}.png` });
                 }
 
+                await page.goto(`https://www.kiwi.com/en/search/tiles/${MY_CITY}/anywhere/${from}/${to}?sortAggregateBy=price`);
+                await page.waitForTimeout(DEFAULT_TIMEOUT);
             }
         }
+
+        await browser.close();
+        //return results; // Return the results array
     }
 }
 

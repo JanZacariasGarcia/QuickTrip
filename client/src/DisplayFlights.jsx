@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import styles from './DisplayFlights.module.css';
 
-export default function DisplayFlights({ airports, home = "DUB", departureDate, returnDate }) {
+export default function DisplayFlights({ airports, home = "DUB", departureDate, returnDate, budget }) {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -19,49 +19,20 @@ export default function DisplayFlights({ airports, home = "DUB", departureDate, 
             setResults([]);
 
             try {
-                // Get only the first destination in the list
-                const destination = airports[0]?.code;
+                // Call your scrape API endpoint
+                const scrapeResponse = await axios.post('/api/scrape', {
+                    destination: 'anywhere', // or use airports[0]?.code
+                    from: departureDate,
+                    to: returnDate,
+                    budget: budget || 500 // Provide a default budget if not specified
+                });
 
-                if (!destination) {
-                    setError("No valid destinations provided.");
-                    setLoading(false);
-                    return;
+                // Handle the response from your scrape function
+                if (scrapeResponse.data.success) {
+                    setResults(scrapeResponse.data.results); // Set the results state
+                } else {
+                    throw new Error('Scraping failed');
                 }
-
-                const options = {
-                    method: 'GET',
-                    url: 'https://multi-site-flight-search.p.rapidapi.com/start-search-lowest-price/',
-                    params: {
-                        city1: home,
-                        city2: destination,
-                        date1: departureDate,
-                        date2: returnDate,
-                        flightType: '1',
-                        cabin: '1',
-                        adults: '1',
-                        children: '0'
-                    },
-                    headers: {
-                        'x-rapidapi-key': '92d970d30cmsh1f8198993778dd8p137efcjsn9cba1685733a',
-                        'x-rapidapi-host': 'multi-site-flight-search.p.rapidapi.com'
-                    }
-                };
-
-                const response = await axios.request(options);
-
-                const flights = response.data?.flights || [];
-
-                setResults([
-                    {
-                        destination,
-                        flights: flights.map(flight => ({
-                            airline: flight.airline,
-                            price: `$${flight.price}`,
-                            duration: flight.duration,
-                            stops: flight.stops === 0 ? 'Direct' : `${flight.stops} stops`
-                        }))
-                    }
-                ]);
             } catch (err) {
                 console.error('Flight search error:', err);
                 setError(err.response?.data?.message || "Failed to fetch flights");
@@ -71,7 +42,7 @@ export default function DisplayFlights({ airports, home = "DUB", departureDate, 
         };
 
         fetchFlights();
-    }, [home, departureDate, returnDate, airports]);
+    }, [home, departureDate, returnDate, airports, budget]);
 
     if (loading) {
         return (
@@ -98,38 +69,14 @@ export default function DisplayFlights({ airports, home = "DUB", departureDate, 
     }
 
     return (
-        <div className={styles.flightResults}>
-            <h2 className={styles.flightResultsTitle}>
-                Flights from {home}
-            </h2>
-            <div className={styles.flightGrid}>
-                {results.map(({ destination, flights }) => (
-                    <div key={destination} className={styles.flightCard}>
-                        <div className={styles.flightCardHeader}>
-                            <h3 className={styles.flightCardTitle}>{destination}</h3>
-                        </div>
-                        <div className={styles.flightCardContent}>
-                            {flights.length ? (
-                                <ul className={styles.flightList}>
-                                    {flights.map((flight, index) => (
-                                        <li key={index} className={styles.flightItem}>
-                                            <div className={styles.flightAirline}>{flight.airline}</div>
-                                            <div className={styles.flightDetails}>
-                                                {flight.duration} • {flight.stops}
-                                            </div>
-                                            <div className={styles.flightPrice}>
-                                                {flight.price}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className={styles.noFlights}>No flights available</p>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+        <div className={styles.resultsContainer}>
+            {results.map((result, index) => (
+                <div key={index} className={styles.flightCard}>
+                    <h3>{result.city}</h3>
+                    <p>Price: €{result.price}</p>
+                    <img src={result.screenshot} alt={`Flight to ${result.city}`} />
+                </div>
+            ))}
         </div>
     );
 }
