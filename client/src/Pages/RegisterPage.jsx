@@ -1,4 +1,4 @@
-import {Link} from "react-router-dom";
+import {Link, Navigate} from "react-router-dom";
 import {useState} from "react";
 import axios from "axios";
 
@@ -6,6 +6,7 @@ export default function RegisterPage(){
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    let redirect = false;
     async function registerUser(ev) {
         ev.preventDefault();
         try {
@@ -15,28 +16,34 @@ export default function RegisterPage(){
                 password,
             });
             alert('Registration Successful. You can now log in');
+            redirect = true;
         }catch (e) {
             alert('This email address is already in use.')
         }
     }
+
+    if (redirect) {
+        return <Navigate to={'/login'} />
+    }
+
     return (
         <div className={"mt-4 grow flex items-center justify-around"}>
             <div className={"mb-64"}>
                 <h1 className={"text-4xl text-center mb-4"}>Register</h1>
                 <form className={"max-w-lg mx-auto"} onSubmit={registerUser}>
                     <input type={"text"} placeholder={"John Doe"}
-                           value={name}
+                           value={name} required
                            onChange={ev => setName(ev.target.value)} />
                     <input type={"email"} placeholder={"your@email.com"}
-                           value={email}
+                           value={email} required
                            onChange={ev => setEmail(ev.target.value)}/>
                     <input type={"password"} placeholder={"password"}
-                           value={password}
+                           value={password} required
                            onChange={ev => setPassword(ev.target.value)}/>
                     <button className={"primary"}>Register</button>
                     <div className={"text-center py-2 text-gray-500"}>
                         Already a member?
-                        <Link className={"underline text-black"} to={'/login'}>Login</Link>
+                        <Link className={"underline text-black"} to={'/login'}> Login</Link>
                     </div>
                 </form>
             </div>

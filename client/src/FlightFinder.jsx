@@ -111,12 +111,6 @@ export default function FlightFinder() {
     return (
         <div>
             <div className="flex flex-col items-center mt-4">
-                <button
-                    onClick={handleApiCall}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                    Get Flight Info
-                </button>
                 {/*/!* Display API Response *!/*/}
                 {/*{apiResponse && (*/}
                 {/*    <div className="mt-4 p-4 bg-green-100 rounded-md">*/}

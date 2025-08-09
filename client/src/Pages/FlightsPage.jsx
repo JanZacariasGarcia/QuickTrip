@@ -28,10 +28,8 @@ export default function FlightsPage() {
                 { withCredentials: true }
             );
 
-            // Axios automatically parses the response data, so you can access it directly
-            setCities(response.data.cities); // Assuming the response is { cities: "..." }
+            setCities(response.data.cities);
         } catch (error) {
-            // Handle Axios errors
             setError(error.response ? error.response.data.message : error.message);
         } finally {
             setLoading(false);
@@ -45,7 +43,7 @@ export default function FlightsPage() {
         try {
             const response = await axios.post(
                 'http://localhost:4000/airports',
-                { airports: parsedCities },  // Match the backend expected property name
+                { airports: parsedCities },
                 { withCredentials: true }
             );
             setCodes(response.data.airports);
@@ -57,10 +55,8 @@ export default function FlightsPage() {
     }
 
     function parseResponse(citiesString) {
-        // Use regex to extract city names between **
         const cityMatches = citiesString.match(/\*\*(.*?)\*\*/g);
         if (cityMatches) {
-            // Remove the ** from the matches
             return cityMatches.map(city => city.replace(/\*\*/g, ''));
         }
         return [];
@@ -68,7 +64,7 @@ export default function FlightsPage() {
 
     useEffect(() => {
         getCities();
-    }, []); // Fetch cities when the component mounts
+    }, []);
 
     useEffect(() => {
         if (cities) {
@@ -78,31 +74,22 @@ export default function FlightsPage() {
 
     return (
         <div>
-            <button
-                onClick={getCities}
-                disabled={loading}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-                {loading ? 'Loading...' : 'Cities:'}
-            </button>
-            {cities !== null && codes !== null && (
-                <div className="mt-4 col">
-                    {codes.map((airport) => (
-                        <li key={airport.code}>
-                            <strong>{airport.city}</strong> - {airport.code}
-                        </li>
-                    ))}
-                </div>
-            )}
+            {/* Only show DisplayFlights when we have airport codes */}
             {codes && (
                 <DisplayFlights
                     airports={codes}
                     home={"DUB"}
                     departureDate={startDate}
                     returnDate={endDate}
+                    budget={budget}
                 />
             )}
-            {error && <p className="text-red-500">{error}</p>}
+            {loading && (
+                <div className="flex justify-center items-center py-8">
+                    <div className="text-lg">Loading flight recommendations...</div>
+                </div>
+            )}
+            {error && <p className="text-red-500 text-center py-4">{error}</p>}
         </div>
     );
 }
