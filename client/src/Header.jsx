@@ -13,7 +13,7 @@ export default function Header(){
 
     }
     return (
-        <>
+        <div className={"py-4 px-8"}>
         <header className={"flex justify-between items-center"}>
             <Link to={'/'} className={"flex items-center gap-1"}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
@@ -23,8 +23,8 @@ export default function Header(){
                 </svg>
                 <span className={"font-bold text-xl"}>QuickTrip</span>
             </Link>
-            {location.pathname !== "/" &&
-            <SearchBar></SearchBar>
+            {location.pathname !== "/" //&&
+            // <SearchBar></SearchBar>
             }
 
             <Link to={user? "/account" : "/login"} className={"flex items-center gap-2 border border-gray-300 rounded-full py-2 px-4"}>
@@ -49,6 +49,6 @@ export default function Header(){
                 )}
             </Link>
         </header>
-        </>
+        </div>
     )
 }

@@ -15,6 +15,8 @@ import multer from 'multer';
 import Groq from "groq-sdk";
 import puppeteer from "puppeteer";
 import playwright from 'playwright';
+import SavedFlight from './models/SavedFlight.js';
+
 
 const __filename = fileURLToPath(import.meta.url); // Get the current file's path
 const __dirname = dirname(__filename); // Get the current directory
@@ -37,7 +39,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(cors({
     credentials: true,
-    origin: true  // Your frontend URL
+    origin: true  // frontend URL
 }));
 
 await mongoose.connect(process.env.MONGO_URL);
@@ -255,12 +257,11 @@ async function scrape(airports, from, to, budget, maxResults = 1) {
 
         // Add common country mappings - expand this based on your cities
         const cityCountryMap = {
+            // Original tourist cities
             'barcelona': 'barcelona-spain',
-            'paris': 'paris-france',
             'london': 'london-united-kingdom',
             'rome': 'rome-italy',
             'amsterdam': 'amsterdam-netherlands',
-            'berlin': 'berlin-germany',
             'madrid': 'madrid-spain',
             'lisbon': 'lisbon-portugal',
             'vienna': 'vienna-austria',
@@ -270,7 +271,6 @@ async function scrape(airports, from, to, budget, maxResults = 1) {
             'stockholm': 'stockholm-sweden',
             'oslo': 'oslo-norway',
             'copenhagen': 'copenhagen-denmark',
-            'helsinki': 'helsinki-finland',
             'reykjavik': 'reykjavik-iceland',
             'zurich': 'zurich-switzerland',
             'brussels': 'brussels-belgium',
@@ -298,8 +298,161 @@ async function scrape(airports, from, to, budget, maxResults = 1) {
             'dubrovnik': 'dubrovnik-croatia',
             'split': 'split-croatia',
             'ibiza': 'ibiza-spain',
-            'zagreb': 'zagreb-croatia'
+
+            // ALL capitals including dependencies (not duplicated)
+            'kabul': 'kabul-afghanistan',
+            'tirana': 'tirana-albania',
+            'algiers': 'algiers-algeria',
+            'andorra la vella': 'andorra-la-vella-andorra',
+            'luanda': 'luanda-angola',
+            "saint john's": 'saint-johns-antigua-and-barbuda',
+            'buenos aires': 'buenos-aires-argentina',
+            'yerevan': 'yerevan-armenia',
+            'oranjestad': 'oranjestad-aruba',
+            'canberra': 'canberra-australia',
+            'baku': 'baku-azerbaijan',
+            'nassau': 'nassau-bahamas',
+            'manama': 'manama-bahrain',
+            'dhaka': 'dhaka-bangladesh',
+            'bridgetown': 'bridgetown-barbados',
+            'minsk': 'minsk-belarus',
+            'belmopan': 'belmopan-belize',
+            'port-au-prince': 'port-au-prince-haiti',
+            'sucre': 'sucre-bolivia',
+            'sarajevo': 'sarajevo-bosnia-and-herzegovina',
+            'gaborone': 'gaborone-botswana',
+            'brasilia': 'brasilia-brazil',
+            'bandar seri begawan': 'bandar-seri-begawan-brunei',
+            'sofia': 'sofia-bulgaria',
+            'ouagadougou': 'ouagadougou-burkina-faso',
+            'gitega': 'gitega-burundi',
+            'praia': 'praia-cabo-verde',
+            'phnom penh': 'phnom-penh-cambodia',
+            'yaounde': 'yaounde-cameroon',
+            'ottawa': 'ottawa-canada',
+            'georgetown': 'georgetown-cayman-islands',
+            'bangui': 'bangui-central-african-republic',
+            'ndjamena': 'ndjamena-chad',
+            'santiago': 'santiago-chile',
+            'beijing': 'beijing-china',
+            'flying fish cove': 'flying-fish-cove-christmas-island',
+            'west island': 'west-island-cocos-keeling-islands',
+            'bogota': 'bogota-colombia',
+            'moroni': 'moroni-comoros',
+            'kinshasa': 'kinshasa-democratic-republic-of-the-congo',
+            'brazzaville': 'brazzaville-republic-of-the-congo',
+            'avarua': 'avarua-cook-islands',
+            'san josé': 'san-jose-costa-rica',
+            'zagreb': 'zagreb-croatia', // this matches existing key but it's the same value, no changes
+            'san salvador': 'san-salvador-el-salvador',
+            'quito': 'quito-ecuador',
+            'cairo': 'cairo-egypt',
+            'malabo': 'malabo-equatorial-guinea',
+            'asmara': 'asmara-eritrea',
+            'tallinn': 'tallinn-estonia',
+            'mbabane': 'mbabane-eswatini',
+            'addis ababa': 'addis-ababa-ethiopia',
+            'stanley': 'stanley-falkland-islands',
+            'torshavn': 'torshavn-faroe-islands',
+            'suva': 'suva-fiji',
+            'helsinki': 'helsinki-finland', // duplicate of existing; same value
+            'paris': 'paris-france', // duplicate; same value
+            'cayenne': 'cayenne-french-guiana',
+            'papeete': 'papeete-french-polynesia',
+            'port-aux-français': 'port-aux-francais-french-southern-territories',
+            'libreville': 'libreville-gabon',
+            'banjul': 'banjul-gambia',
+            'tbilisi': 'tbilisi-georgia',
+            'berlin': 'berlin-germany', // duplicate; same value
+            'accra': 'accra-ghana',
+            'gibraltar': 'gibraltar-gibraltar',
+            'nuuk': 'nuuk-greenland',
+            'hamilton': 'hamilton-bermuda',
+            'hong kong': 'hong-kong-china',
+            'kingston': 'kingston-jamaica',
+            'tokyo': 'tokyo-japan',
+            'saint helier': 'saint-helier-jersey',
+            'amman': 'amman-jordan',
+            'nairobi': 'nairobi-kenya',
+            'riyadh': 'riyadh-saudi-arabia',
+            'belgrade': 'belgrade-serbia',
+            'victoria': 'victoria-seychelles',
+            'freetown': 'freetown-sierra-leone',
+            'singapore': 'singapore-singapore',
+            'bratislava': 'bratislava-slovakia',
+            'ljubljana': 'ljubljana-slovenia',
+            'honiara': 'honiara-solomon-islands',
+            'mogadishu': 'mogadishu-somalia',
+            'pretoria': 'pretoria-south-africa',
+            'cape town': 'cape-town-south-africa',
+            'bloemfontein': 'bloemfontein-south-africa',
+            'king edward point': 'king-edward-point-south-georgia-and-south-sandwich-islands',
+            'seoul': 'seoul-south-korea',
+            'juba': 'juba-south-sudan',
+            'colombo': 'colombo-sri-lanka',
+            'sri jayawardenepura kotte': 'sri-jayawardenepura-kotte-sri-lanka',
+            'khartoum': 'khartoum-sudan',
+            'paramaribo': 'paramaribo-suriname',
+            'longyearbyen': 'longyearbyen-svalbard-and-jan-mayen',
+            'bern': 'bern-switzerland',
+            'damascus': 'damascus-syria',
+            'taipei': 'taipei-taiwan',
+            'dushanbe': 'dushanbe-tajikistan',
+            'dodoma': 'dodoma-tanzania',
+            'bangkok': 'bangkok-thailand',
+            'dili': 'dili-timor-leste',
+            'lome': 'lome-togo',
+            "nuku'alofa": 'nukualofa-tonga',
+            'port-of-spain': 'port-of-spain-trinidad-and-tobago',
+            'tunis': 'tunis-tunisia',
+            'ankara': 'ankara-turkey',
+            'ashgabat': 'ashgabat-turkmenistan',
+            'cockburn town': 'cockburn-town-turks-and-caicos-islands',
+            'funafuti': 'funafuti-tuvalu',
+            'kampala': 'kampala-uganda',
+            'kyiv': 'kyiv-ukraine',
+            'abu dhabi': 'abu-dhabi-united-arab-emirates',
+            'washington, d.c.': 'washington-dc-united-states',
+            'montevideo': 'montevideo-uruguay',
+            'tashkent': 'tashkent-uzbekistan',
+            'port vila': 'port-vila-vanuatu',
+            'caracas': 'caracas-venezuela',
+            'hanoi': 'hanoi-vietnam',
+            'road town': 'road-town-british-virgin-islands',
+            'charlotte amalie': 'charlotte-amalie-us-virgin-islands',
+            'mata-utu': 'mata-utu-wallis-and-futuna',
+            'ramallah': 'ramallah-palestine',
+
+            'istanbul': 'istanbul-turkey',
+            'mecca': 'mecca-saudi-arabia',
+            'antalya': 'antalya-turkey',
+            'macau': 'macau-china',
+            'kuala lumpur': 'kuala-lumpur-malaysia',
+            'new york city': 'new-york-united-states',
+            'delhi': 'delhi-india',
+            'shenzhen': 'shenzhen-china',
+            'mumbai': 'mumbai-india',
+            'phuket': 'phuket-thailand',
+            'pattaya': 'pattaya-thailand',
+            'los angeles': 'los-angeles-united-states',
+            'las vegas': 'las-vegas-united-states',
+            'orlando': 'orlando-united-states',
+            'miami': 'miami-united-states',
+            'san francisco': 'san-francisco-united-states',
+            'sydney': 'sydney-australia',
+            'melbourne': 'melbourne-australia',
+            'mexico city': 'mexico-city-mexico',
+            'shanghai': 'shanghai-china',
+            'vancouver': 'vancouver-canada',
+            'são paulo': 'sao-paulo-brazil',
+            'cancún': 'cancun-mexico',
+            'honolulu': 'honolulu-united-states',
+            'toronto': 'toronto-canada',
+            'jerusalem': 'jerusalem-israel',
+            'marrakech': 'marrakech-morocco',
+            'lima': 'lima-peru',
         };
+
 
         console.log(`Looking up "${formatted}" in cityCountryMap...`);
         console.log(`Found mapping: ${cityCountryMap[formatted] || 'NOT FOUND'}`);
@@ -957,92 +1110,238 @@ app.post('/api/scrape', async (req, res) => {
     }
 });
 
+// Save a flight
+app.post('/api/save-flight', async (req, res) => {
+    try {
+        const userData = await getUserDataFromReq(req);
+        const { city, code, price, pageUrl, departureDate, returnDate } = req.body;
 
+        // Validate required fields
+        if (!city || !price || !pageUrl || !departureDate || !returnDate) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields'
+            });
+        }
 
-const photosMiddleware = multer({ dest: 'uploads/' });
-// app.post('/upload', photosMiddleware.array('photos', 100),async (req, res) =>{
-//     const uploadedFiles = [];
-//     for(let i = 0; i<req.files.length; i++){
-//         const {path, originalname} = req.files[i];
-//         const parts = originalname.split('.')
-//         const ext = parts[parts.length-1];
-//         const newPath = path +'.'+ ext;
-//         fs.renameSync(path, newPath);
-//         uploadedFiles.push(newPath.replace('uploads/',''));
-//     }
-//     res.json(uploadedFiles);
-// });
-// app.post('/places', (req, res) => {
-//     const { token } = req.cookies;
-//     const { title, address, addedPhotos, description, perks, extraInfo, checkIn, checkOut, guests, price } = req.body;
-//     jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-//         if (err) throw err;
-//         const placeDoc = await Place.create({
-//             owner: userData.id,
-//             title, address, photos: addedPhotos,
-//             description, perks, extraInfo,
-//             checkIn, checkOut, guests, price
-//         });
-//         res.json(placeDoc);
-//     });
-// });
-// app.get('/user-places', (req,res)=>{
-//     const {token} = req.cookies;
-//     jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-//         if (err) throw err;
-//         const {id} = userData;
-//         res.json(await Place.find({owner:id}));
-//     });
-// });
-// app.get('/places/:id', async (req, res) => {
-//     const {id} = req.params;
-//     res.json(await Place.findById(id));
-// });
-// app.put('/places', async (req, res) => {
-//     const {token} = req.cookies;
-//     const {
-//         id,
-//         title,address,addedPhotos,
-//         description,perks,extraInfo,
-//         checkIn,checkOut,guests, price
-//     } = req.body;
-//     await jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-//         if (err) throw err;
-//         const placeDoc = await Place.findById(id);
-//         if (userData.id === placeDoc.owner.toString()) {
-//             placeDoc.set({
-//                 title, address, photos: addedPhotos,
-//                 description, perks, extraInfo,
-//                 checkIn, checkOut, guests, price
-//             })
-//             await placeDoc.save();
-//             res.json('ok');
-//         }
-//     });
-// });
+        // Check if flight is already saved by this user
+        const existingFlight = await SavedFlight.findOne({
+            userId: userData.id,
+            city: city,
+            departureDate: departureDate,
+            returnDate: returnDate
+        });
 
-// app.get('/places', async (req, res) => {
-//     res.json(await Place.find());
-// });
+        if (existingFlight) {
+            return res.status(409).json({
+                success: false,
+                error: 'Flight already saved'
+            });
+        }
 
-// app.post('/bookings', async (req,res) => {
-//     const userData = await getUserDataFromReq(req);
-//     const {
-//         place, checkIn, checkOut, name, guests, phone, price,
-//     } = req.body;
-//     Booking.create({
-//         place, checkIn, checkOut, name, guests, phone, price,
-//         user: userData.id,
-//     }).then((doc) => {
-//         res.json(doc);
-//     }).catch((err) => {
-//         throw err;
-//     });
-// });
+        // Parse departure date to check if it's in the past
+        const depDate = new Date(departureDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-// app.get('/bookings', async (req,res) => {
-//     const userData = await getUserDataFromReq(req);
-//     res.json(await Booking.find({user:userData.id}).populate('place'));
-// })
+        if (depDate < today) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot save flights with past departure dates'
+            });
+        }
+
+        const savedFlight = new SavedFlight({
+            userId: userData.id,
+            city,
+            code,
+            price,
+            pageUrl,
+            departureDate,
+            returnDate,
+            scrapedAt: new Date()
+        });
+
+        await savedFlight.save();
+
+        res.json({
+            success: true,
+            message: 'Flight saved successfully',
+            savedFlight: {
+                id: savedFlight._id,
+                city: savedFlight.city,
+                code: savedFlight.code,
+                price: savedFlight.price,
+                scrapedAt: savedFlight.scrapedAt
+            }
+        });
+
+    } catch (error) {
+        console.error('Error saving flight:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save flight'
+        });
+    }
+});
+
+// Remove a saved flight
+app.delete('/api/save-flight/:flightId', async (req, res) => {
+    try {
+        const userData = await getUserDataFromReq(req);
+        const { flightId } = req.params;
+
+        const deletedFlight = await SavedFlight.findOneAndDelete({
+            _id: flightId,
+            userId: userData.id
+        });
+
+        if (!deletedFlight) {
+            return res.status(404).json({
+                success: false,
+                error: 'Flight not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Flight removed from saved flights'
+        });
+
+    } catch (error) {
+        console.error('Error removing flight:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to remove flight'
+        });
+    }
+});
+
+// Get user's saved flights
+app.get('/api/saved-flights', async (req, res) => {
+    try {
+        const userData = await getUserDataFromReq(req);
+
+        const savedFlights = await SavedFlight.find({
+            userId: userData.id
+        }).sort({ createdAt: -1 });
+
+        // Filter out flights where departure date has passed
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const validFlights = savedFlights.filter(flight => {
+            const depDate = new Date(flight.departureDate);
+            return depDate >= today;
+        });
+
+        // Clean up expired flights in background
+        if (validFlights.length !== savedFlights.length) {
+            const expiredFlights = savedFlights.filter(flight => {
+                const depDate = new Date(flight.departureDate);
+                return depDate < today;
+            });
+
+            // Delete expired flights
+            await SavedFlight.deleteMany({
+                _id: { $in: expiredFlights.map(f => f._id) }
+            });
+        }
+
+        res.json({
+            success: true,
+            savedFlights: validFlights
+        });
+
+    } catch (error) {
+        console.error('Error fetching saved flights:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch saved flights'
+        });
+    }
+});
+
+// Check if specific flights are saved (for displaying star states)
+app.post('/api/check-saved-flights', async (req, res) => {
+    try {
+        const userData = await getUserDataFromReq(req);
+        const { flights } = req.body; // Array of flight objects
+
+        if (!flights || !Array.isArray(flights)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid flights array'
+            });
+        }
+
+        // Create lookup criteria for each flight
+        const lookupCriteria = flights.map(flight => ({
+            userId: userData.id,
+            city: flight.city,
+            departureDate: flight.departureDate,
+            returnDate: flight.returnDate
+        }));
+
+        // Find saved flights
+        const savedFlights = await SavedFlight.find({
+            $or: lookupCriteria
+        });
+
+        // Create a map of saved flights
+        const savedFlightMap = {};
+        savedFlights.forEach(sf => {
+            const key = `${sf.city}-${sf.departureDate}-${sf.returnDate}`;
+            savedFlightMap[key] = sf._id;
+        });
+
+        // Map results back to the original flights
+        const results = flights.map(flight => {
+            const key = `${flight.city}-${flight.departureDate}-${flight.returnDate}`;
+            return {
+                ...flight,
+                isSaved: !!savedFlightMap[key],
+                savedFlightId: savedFlightMap[key] || null
+            };
+        });
+
+        res.json({
+            success: true,
+            flights: results
+        });
+
+    } catch (error) {
+        console.error('Error checking saved flights:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to check saved flights'
+        });
+    }
+});
+
+// Cleanup job - run periodically to remove expired flights
+// You can call this manually or set up a cron job
+app.post('/api/cleanup-expired-flights', async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const result = await SavedFlight.deleteMany({
+            departureDate: { $lt: today.toISOString().split('T')[0] }
+        });
+
+        res.json({
+            success: true,
+            message: `Cleaned up ${result.deletedCount} expired flights`
+        });
+
+    } catch (error) {
+        console.error('Error during cleanup:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Cleanup failed'
+        });
+    }
+});
 
 app.listen(4000);

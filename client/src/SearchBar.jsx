@@ -13,15 +13,13 @@ export default function SearchBar() {
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(tomorrowDate);
     const [weather, setWeather] = useState('');
-    const [itineraryDuration, setItineraryDuration] = useState('');
-    const [itineraryActivity, setItineraryActivity] = useState('');
-    const [budget, setBudget] = useState(null);
+    const [budget, setBudget] = useState('');
     const [redirect, setRedirect] = useState(false);
     const containerRef = useRef(null);
     const buttonRefs = {
         calendar: useRef(null),
         weather: useRef(null),
-        itinerary: useRef(null)
+        budget: useRef(null)
     };
     useEffect(() => {
         function handleClickOutside(event) {
@@ -51,7 +49,7 @@ export default function SearchBar() {
         e.preventDefault();
 
         // Check if all required fields are filled
-        if (!weather || !itineraryDuration || !itineraryActivity || !budget) {
+        if (!weather || !budget) {
             alert('Please fill in all fields');
             return;
         }
@@ -62,8 +60,6 @@ export default function SearchBar() {
     if (redirect){
         const searchParams = new URLSearchParams({
             weather: weather,
-            duration: itineraryDuration,
-            activity: itineraryActivity,
             budget : budget
         });
 
@@ -89,15 +85,15 @@ export default function SearchBar() {
                                             <input type="date"
                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
                                                    min={today} value={startDate}
-                                                    onChange={ev => setStartDate(ev.target.value)}/>
+                                                   onChange={ev => setStartDate(ev.target.value)}/>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-gray-600">End date</label>
                                             <input type="date"
                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                                min={tomorrowDate} // Tomorrow's date
-                                                value={endDate}
-                                            onChange={ev => setEndDate(ev.target.value)}/>
+                                                   min={tomorrowDate} // Tomorrow's date
+                                                   value={endDate}
+                                                   onChange={ev => setEndDate(ev.target.value)}/>
                                         </div>
                                     </div>
                                 </div>
@@ -107,18 +103,11 @@ export default function SearchBar() {
                                 <div className="space-y-4">
                                     <h3 className="font-medium text-gray-900">Weather preferences</h3>
                                     <div className="space-y-2">
-                                        {/*<label className="flex items-center space-x-2">*/}
-                                        {/*    <input type="checkbox" className="rounded" />*/}
-                                        {/*    <span className="text-sm text-gray-600">Sunny weather only</span>*/}
-                                        {/*</label>*/}
-                                        {/*<label className="flex items-center space-x-2">*/}
-                                        {/*    <input type="checkbox" className="rounded" />*/}
-                                        {/*    <span className="text-sm text-gray-600">Avoid rain</span>*/}
-                                        {/*</label>*/}
                                         <label className="flex items-center gap-x-2">
                                             <span className="text-sm text-gray-600">Temperature range</span>
                                             <select className="rounded" value={weather}
                                                     onChange={ev => setWeather(ev.target.value)}>
+                                                <option value="">Select temperature range</option>
                                                 <option value={"<0°C"}>I want to freeze (less than 0°C)</option>
                                                 <option value={"0°C-10°C"}>I want a chilly escape (0°C-10°C)</option>
                                                 <option value={"10°C-20°C"}>I want a fall/spring holiday (10°C-20°C)</option>
@@ -131,35 +120,19 @@ export default function SearchBar() {
                                 </div>
                             )}
 
-                            {activeButton === 'itinerary' && (
+                            {activeButton === 'budget' && (
                                 <div className="space-y-4">
-                                    <h3 className="font-medium text-gray-900">Itinerary preferences</h3>
-                                    <div className="space-y-2">
-                                        <div>
-                                            <label className="block text-sm text-gray-600">Preferred duration</label>
-                                            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                                    value={itineraryDuration}
-                                                    onChange={ev => setItineraryDuration(ev.target.value)}>
-                                                <option>Half day</option>
-                                                <option>Full day</option>
-                                                <option>Multi-day</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm text-gray-600">Activity level</label>
-                                            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-                                                    value={itineraryActivity}
-                                                    onChange={ev => setItineraryActivity(ev.target.value)}>
-                                                    <option>Relaxed</option>
-                                                    <option>Moderate</option>
-                                                    <option>Active</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm text-gray-600">Budget in Eur</label>
-                                            <input type={"number"} placeholder={100}
-                                            onChange={ev => setBudget(ev.target.value)} required={true}/>
-                                        </div>
+                                    <h3 className="font-medium text-gray-900">Budget</h3>
+                                    <div>
+                                        <label className="block text-sm text-gray-600">Budget in EUR</label>
+                                        <input
+                                            type="number"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
+                                            placeholder="100"
+                                            value={budget}
+                                            onChange={ev => setBudget(ev.target.value)}
+                                            required
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -171,7 +144,7 @@ export default function SearchBar() {
     }
 
     return (
-        <div ref={containerRef} className="max-w-2xl mx-auto p-4 search-bar-container">
+        <div ref={containerRef} className="max-w-3xl mx-auto p-4 search-bar-container">
             <form onSubmit={submit}>
                 <div className="flex items-center bg-white rounded-full shadow-lg border border-gray-200 h-16">
                     <button
@@ -209,24 +182,19 @@ export default function SearchBar() {
                     <div className="h-8 w-px bg-gray-200"></div>
 
                     <button
-                        ref={buttonRefs.itinerary}
+                        ref={buttonRefs.budget}
                         type="button"
-                        onClick={() => setActiveButton(activeButton === 'itinerary' ? null : 'itinerary')}
-                        className={`flex items-center justify-center px-8 h-full hover:bg-gray-100 transition-all flex-1 rounded-full bg-white ${activeButton === 'itinerary' ? 'bg-gray-100' : ''}`}
+                        onClick={() => setActiveButton(activeButton === 'budget' ? null : 'budget')}
+                        className={`flex items-center justify-center px-8 h-full hover:bg-gray-100 transition-all flex-1 rounded-full bg-white ${activeButton === 'budget' ? 'bg-gray-100' : ''}`}
                     >
                         <div className="flex items-center space-x-2">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
-                                 stroke="currentColor" className="size-6">
+                                 stroke="currentColor" className="w-5 h-5 text-gray-600">
                                 <path strokeLinecap="round" strokeLinejoin="round"
-                                      d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/>
+                                      d="M14.25 7.756a4.5 4.5 0 1 0 0 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
                             </svg>
+                            <span className="ml-2 text-sm font-medium">Budget</span>
                         </div>
-                        <span className="ml-2 text-sm font-medium">Itinerary/Budget</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
-                             stroke="currentColor" className="size-6">
-                            <path strokeLinecap="round" strokeLinejoin="round"
-                                  d="M14.25 7.756a4.5 4.5 0 1 0 0 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                        </svg>
                     </button>
 
                     <div className="h-8 w-px bg-gray-200"></div>
