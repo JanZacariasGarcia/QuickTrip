@@ -120,7 +120,7 @@ export default function ProfilePage(){
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                         <div className="space-y-3">
                             <Link
-                                to="/search"
+                                to="/"
                                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
