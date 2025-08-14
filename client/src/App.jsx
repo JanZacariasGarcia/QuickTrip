@@ -7,8 +7,10 @@ import RegisterPage from "./Pages/RegisterPage.jsx";
 import axios from "axios";
 import {UserContentProvider} from "./UserContext";
 import ProfilePage from "./Pages/ProfilePage";
-import BookingsPage from "./Pages/BookingsPage";
+import ItinerariesPage from "./Pages/ItinerariesPage.jsx";
 import FlightsPage from "./Pages/FlightsPage.jsx";
+import ItineraryDetailPage from './Pages/ItineraryDetailPage';
+
 
 axios.defaults.baseURL = 'http://localhost:4000';
 axios.defaults.withCredentials = true;
@@ -21,8 +23,9 @@ function App() {
                     <Route path={"/login"} element={<LoginPage />}/>
                     <Route path={"/register"} element={<RegisterPage />}/>
                     <Route path={"/account"} element={<ProfilePage />}/>
-                    <Route path={"/account/bookings"} element={<BookingsPage />}/>
+                    <Route path={"/account/bookings"} element={<ItinerariesPage />}/>
                     <Route path={"/flights/:dates"} element={<FlightsPage />} />
+                    <Route path={"/itineraries/:id"} element={<ItineraryDetailPage />} />
                 </Route>
             </Routes>
         </UserContentProvider>
