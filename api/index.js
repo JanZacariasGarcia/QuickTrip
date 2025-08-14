@@ -16,6 +16,8 @@ import Groq from "groq-sdk";
 import puppeteer from "puppeteer";
 import playwright from 'playwright';
 import SavedFlight from './models/SavedFlight.js';
+import Itinerary from './models/Itinerary.js';
+
 
 
 const __filename = fileURLToPath(import.meta.url); // Get the current file's path
@@ -1344,4 +1346,517 @@ app.post('/api/cleanup-expired-flights', async (req, res) => {
     }
 });
 
+// Helper function to save itinerary to database
+async function saveItineraryToDatabase(itineraryData, userData) {
+    try {
+        // Handle both cases: userData as string ID or object with id property
+        const userId = typeof userData === 'string' ? userData : (userData.id || userData._id);
+
+        if (!userId) {
+            throw new Error('No valid user ID provided');
+        }
+
+        // Remove the problematic _id field before spreading
+        const { _id, ...cleanItineraryData } = itineraryData;
+
+        const itinerary = new Itinerary({
+            ...cleanItineraryData,
+            userId: userId
+        });
+
+        const savedItinerary = await itinerary.save();
+        console.log('Itinerary saved to database:', savedItinerary._id);
+        return savedItinerary;
+    } catch (error) {
+        console.error('Error saving itinerary to database:', error);
+        throw error;
+    }
+}
+
+// Improved ID generator function
+function generateItineraryId() {
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString(36).substring(2, 15);
+    return `itin_${timestamp}_${random}`;
+}
+
+app.get('/test', (req,res) => {
+    res.json('test ok');
+})
+
+app.post('/register', async (req,res) => {
+    const {name,email,password} = req.body;
+    try {
+        const userDoc = await User.create({
+            name,
+            email,
+            password: bcrypt.hashSync(password, bcryptSalt)
+        });
+        res.json(userDoc);
+    }catch (e) {
+        res.status(422).json(e);
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const userDoc = await User.findOne({ email });
+
+    if (!userDoc) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const passOk = await bcrypt.compare(password, userDoc.password);
+    if (!passOk) {
+        return res.status(422).json({ error: 'Incorrect password' });
+    }
+
+    jwt.sign({ email: userDoc.email, id: userDoc._id }, jwtSecret, {}, (err, token) => {
+        if (err) throw err;
+        res.cookie('token', token, { httpOnly: true }).json({
+            id: userDoc._id,
+            email: userDoc.email
+        });
+    });
+});
+
+app.get('/profile', (req,res) => {
+    const {token} = req.cookies;
+    if(token){
+        jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+            if(err) throw err;
+            const {name, email, _id} = await User.findById(userData.id);
+            res.json({name, email, _id});
+        });
+    }else{
+        res.json(null);
+    }
+});
+
+app.post('/logout', (req,res) => {
+    res.cookie('token', '').json(true);
+});
+
+// ITINERARY GENERATION ENDPOINT
+app.post('/api/generate-itinerary', async (req, res) => {
+    const { destination, departureDate, returnDate, preferences } = req.body;
+    const groq = new Groq({apiKey:'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'});
+
+    // Input validation
+    if (!destination || !departureDate || !returnDate) {
+        return res.status(400).json({
+            success: false,
+            error: 'Missing required fields: destination, departureDate, and returnDate are required'
+        });
+    }
+
+    // Get user data for saving to database
+    let userData;
+    try {
+        userData = await getUserDataFromReq(req);
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            error: 'Authentication required'
+        });
+    }
+
+    // Calculate trip duration
+    const startDate = new Date(departureDate);
+    const endDate = new Date(returnDate);
+    const tripDuration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+    if (tripDuration <= 0) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid dates: return date must be after departure date'
+        });
+    }
+
+    // Set default preferences if not provided
+    const {
+        activityLevel = 'intermediate',
+        duration = 'full-day',
+        interests = [],
+        budget = 'moderate'
+    } = preferences || {};
+
+    // Format destination name for better readability
+    const cityName = destination.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+    // Build dynamic prompt based on preferences
+    const buildPrompt = () => {
+        let prompt = `Create a detailed ${tripDuration}-day travel itinerary for ${cityName}.
+
+Trip Details:
+- Destination: ${cityName}
+- Arrival: ${startDate.toDateString()}
+- Departure: ${endDate.toDateString()}
+- Duration: ${tripDuration} days
+
+Traveler Preferences:
+- Activity Level: ${activityLevel} (${getActivityDescription(activityLevel)})
+- Duration Style: ${duration} (${getDurationDescription(duration)})
+- Budget: ${budget} (${getBudgetDescription(budget)})`;
+
+        if (interests.length > 0) {
+            prompt += `\n- Interests: ${interests.join(', ')}`;
+        }
+
+        prompt += `\n\nPlease create a comprehensive itinerary that includes:
+1. Daily activities and attractions
+2. Recommended restaurants and dining experiences
+3. Transportation suggestions
+4. Estimated costs per activity (based on ${budget} budget)
+5. Timing for each activity
+6. Any special tips or local insights
+
+Format the response as a JSON object with the following structure:
+{
+  "destination": "${cityName}",
+  "startDate": "${departureDate}",
+  "endDate": "${returnDate}",
+  "duration": ${tripDuration},
+  "preferences": {
+    "activityLevel": "${activityLevel}",
+    "duration": "${duration}",
+    "interests": ${JSON.stringify(interests)},
+    "budget": "${budget}"
+  },
+  "days": [
+    {
+      "day": 1,
+      "date": "YYYY-MM-DD",
+      "theme": "Day theme/title",
+      "activities": [
+        {
+          "time": "09:00",
+          "name": "Activity name",
+          "description": "Detailed description",
+          "location": "Address or area",
+          "cost": "Estimated cost",
+          "duration": "Time needed",
+          "tips": "Local tips or notes"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "Restaurant name",
+          "cuisine": "Type of cuisine",
+          "location": "Area",
+          "cost": "Price range"
+        }
+      ],
+      "totalEstimatedCost": "Daily budget estimate"
+    }
+  ],
+  "totalEstimatedCost": "Total trip cost estimate",
+  "generalTips": ["Tip 1", "Tip 2"],
+  "transportation": {
+    "getting_around": "How to get around the city",
+    "recommendations": ["Transport tip 1", "Transport tip 2"]
+  }
+}
+
+Make sure to tailor all recommendations to the specified activity level, duration preferences, interests, and budget constraints.`;
+
+        return prompt;
+    };
+
+    try {
+        const completion = await groq.chat.completions.create({
+            messages: [{
+                role: "user",
+                content: buildPrompt()
+            }],
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.7,
+            max_tokens: 4000
+        });
+
+        // Parse the AI response
+        let itineraryData;
+        try {
+            const responseText = completion.choices[0].message.content;
+
+            // Try to extract JSON from the response
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
+            if (jsonMatch) {
+                itineraryData = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not find JSON in response');
+            }
+
+            // Validate the parsed data has required fields
+            if (!itineraryData.destination || !itineraryData.days) {
+                throw new Error('Invalid itinerary structure');
+            }
+
+        } catch (parseError) {
+            console.error('Error parsing AI response:', parseError);
+            // Fallback: create a basic structure from the raw response
+            itineraryData = {
+                destination: cityName,
+                startDate: departureDate,
+                endDate: returnDate,
+                duration: tripDuration,
+                preferences: { activityLevel, duration, interests, budget },
+                rawContent: completion.choices[0].message.content,
+                days: [],
+                error: 'Could not parse structured data, raw content provided'
+            };
+        }
+
+        // Add metadata
+        itineraryData.createdAt = new Date().toISOString();
+        itineraryData._id = generateItineraryId();
+
+        // Save to database
+        try {
+            const savedItinerary = await saveItineraryToDatabase(itineraryData, userData.id);
+            itineraryData._id = savedItinerary._id; // Use the actual MongoDB ID
+        } catch (dbError) {
+            console.error('Database save error:', dbError);
+            // Continue with response even if save fails
+        }
+
+        res.json({
+            success: true,
+            itinerary: itineraryData
+        });
+
+    } catch (error) {
+        console.error('Groq API Error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate itinerary',
+            details: error.message
+        });
+    }
+});
+
+// Helper functions for preference descriptions
+function getActivityDescription(level) {
+    const descriptions = {
+        'relaxed': 'leisurely pace with plenty of rest time',
+        'intermediate': 'moderate activity level with balanced schedule',
+        'active': 'high-energy itinerary with lots of activities'
+    };
+    return descriptions[level] || descriptions['intermediate'];
+}
+
+function getDurationDescription(duration) {
+    const descriptions = {
+        'half-day': 'activities that take 3-4 hours each',
+        'full-day': 'comprehensive daily experiences',
+        'multi-day': 'experiences that span multiple days'
+    };
+    return descriptions[duration] || descriptions['full-day'];
+}
+
+function getBudgetDescription(budget) {
+    const descriptions = {
+        'budget': 'focus on free and low-cost activities',
+        'moderate': 'balanced mix of free and paid experiences',
+        'luxury': 'premium experiences and high-end recommendations'
+    };
+    return descriptions[budget] || descriptions['moderate'];
+}
+
+// ITINERARY MANAGEMENT ENDPOINTS
+
+// Get all itineraries for a user
+app.get('/api/itineraries', async (req, res) => {
+    try {
+        // Get user data from token
+        const userData = await getUserDataFromReq(req);
+
+        // Fetch itineraries from database
+        const itineraries = await Itinerary.find({ userId: userData.id })
+            .sort({ createdAt: -1 })
+            .select('-__v') // Exclude version field
+            .lean(); // Return plain objects for better performance
+
+        res.json({
+            success: true,
+            itineraries: itineraries
+        });
+    } catch (error) {
+        console.error('Error fetching itineraries:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid authentication token'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch itineraries'
+        });
+    }
+});
+
+// Get specific itinerary
+app.get('/api/itineraries/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userData = await getUserDataFromReq(req);
+
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid itinerary ID format'
+            });
+        }
+
+        // Find itinerary that belongs to the authenticated user
+        const itinerary = await Itinerary.findOne({
+            _id: id,
+            userId: userData.id
+        }).select('-__v');
+
+        if (!itinerary) {
+            return res.status(404).json({
+                success: false,
+                error: 'Itinerary not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            itinerary: itinerary
+        });
+    } catch (error) {
+        console.error('Error fetching itinerary:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid authentication token'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch itinerary'
+        });
+    }
+});
+
+// Update itinerary
+app.put('/api/itineraries/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userData = await getUserDataFromReq(req);
+        const updateData = req.body;
+
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid itinerary ID format'
+            });
+        }
+
+        // Remove fields that shouldn't be updated
+        delete updateData._id;
+        delete updateData.userId;
+        delete updateData.createdAt;
+
+        // Update the itinerary
+        const updatedItinerary = await Itinerary.findOneAndUpdate(
+            { _id: id, userId: userData.id },
+            { ...updateData, updatedAt: new Date() },
+            { new: true, runValidators: true }
+        ).select('-__v');
+
+        if (!updatedItinerary) {
+            return res.status(404).json({
+                success: false,
+                error: 'Itinerary not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            itinerary: updatedItinerary,
+            message: 'Itinerary updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating itinerary:', error);
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid data provided',
+                details: error.message
+            });
+        }
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid authentication token'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update itinerary'
+        });
+    }
+});
+
+// Delete itinerary
+app.delete('/api/itineraries/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userData = await getUserDataFromReq(req);
+
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid itinerary ID format'
+            });
+        }
+
+        // Delete itinerary that belongs to the authenticated user
+        const deletedItinerary = await Itinerary.findOneAndDelete({
+            _id: id,
+            userId: userData.id
+        });
+
+        if (!deletedItinerary) {
+            return res.status(404).json({
+                success: false,
+                error: 'Itinerary not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Itinerary deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting itinerary:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid authentication token'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete itinerary'
+        });
+    }
+});
 app.listen(4000);
