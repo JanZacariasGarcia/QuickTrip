@@ -24,6 +24,8 @@ const __filename = fileURLToPath(import.meta.url); // Get the current file's pat
 const __dirname = dirname(__filename); // Get the current directory
 
 dotenv.config();
+console.log('Raw key from env:', JSON.stringify(process.env.GROQ_API));
+
 const app = express();
 
 const bcryptSalt = bcrypt.genSaltSync(12);
@@ -127,7 +129,7 @@ app.post('/logout', (req,res) => {
 
 app.post('/cities', async (req, res) => {
     const { startDate, endDate, weather, budget } = req.body;
-    const groq = new Groq({apiKey:'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'});
+    const groq = new Groq({apiKey:process.env.GROQ_API});
     console.log(weather);
     console.log(budget);
     console.log(startDate);
@@ -156,7 +158,7 @@ app.post('/cities', async (req, res) => {
 
 app.post('/airports', async (req, res) => {
     const { airports } = req.body;
-    const groq = new Groq({apiKey:'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'});
+    const groq = new Groq({apiKey:process.env.GROQ_API});
 
     // Input validation
     if (!airports || !Array.isArray(airports) || airports.length === 0) {
@@ -1440,7 +1442,7 @@ app.post('/logout', (req,res) => {
 // ITINERARY GENERATION ENDPOINT
 app.post('/api/generate-itinerary', async (req, res) => {
     const { destination, departureDate, returnDate, preferences } = req.body;
-    const groq = new Groq({apiKey:'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'});
+    const groq = new Groq({apiKey:process.env.GROQ_API});
 
     // Input validation
     if (!destination || !departureDate || !returnDate) {
