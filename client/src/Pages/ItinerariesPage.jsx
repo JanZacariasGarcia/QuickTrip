@@ -254,7 +254,7 @@ export default function ItinerariesPage(){
                                             </div>
                                         </div>
                                         <button
-                                            className="text-gray-400 hover:text-red-500 transition-colors text-xl"
+                                            className="bg-white text-gray-400 hover:text-red-500 transition-colors text-xl"
                                             onClick={() => deleteItinerary(itinerary._id)}
                                             title="Delete itinerary"
                                         >

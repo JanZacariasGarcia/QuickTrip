@@ -89,7 +89,7 @@ export default function ProfilePage(){
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                                        My Bookings
+                                        My Itineraries
                                     </h3>
                                     <p className="text-gray-600 text-sm">View your accommodation reservations</p>
                                 </div>
